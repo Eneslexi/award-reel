@@ -117,7 +117,7 @@
 
   /* ============ SECTION 2: COLORFUL (Mana vibe) ============ */
   #colorful {
-    position: relative; min-height: 160vh; overflow: clip;
+    position: relative; min-height: 280vh; overflow: clip;
     background: linear-gradient(180deg, #f0e75a 0%, #e9ef86 55%, #fdf3e3 100%);
   }
   #colorful .sticky-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
@@ -194,7 +194,7 @@
   .tag.show { opacity: 1; transform: none; }
 
   /* ============ SECTION 3: 3D JACKS (Lusion vibe) ============ */
-  #three-intro { position: relative; height: 220vh; background: #0a0a12; }
+  #three-intro { position: relative; height: 340vh; background: #0a0a12; }
   #three-intro .sticky-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
   #jacks-canvas { position: absolute; inset: 0; }
   #three-intro .ui { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
@@ -218,7 +218,7 @@
   }
 
   /* ============ SECTION 4: SCROLL ZOOM (igloo vibe) ============ */
-  #zoom-scroll { position: relative; height: 320vh; background: #efe3e0; }
+  #zoom-scroll { position: relative; height: 500vh; background: #efe3e0; }
   #zoom-scroll .sticky-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
   #zoom-canvas { position: absolute; inset: 0; }
   #zoom-scroll .caption {
@@ -448,10 +448,12 @@ tiltCard();
 const colorful = document.getElementById('colorful');
 const decos = [...document.querySelectorAll('.deco')];
 const can = document.getElementById('can');
+let colP = 0; // smoothed progress
 function colorfulScroll() {
   const r = colorful.getBoundingClientRect();
   const p = Math.min(1, Math.max(0, -r.top / (r.height - innerHeight))); // 0..1 through section
-  const scatter = Math.min(1, p * 2.2);
+  colP += (p - colP) * 0.055; // lerp: animation glides after the scroll
+  const scatter = Math.min(1, colP * 1.35);
   decos.forEach(d => {
     const sx = parseFloat(d.dataset.sx), sy = parseFloat(d.dataset.sy);
     d.style.transform = `translate(${sx * scatter * 60}vw, ${sy * scatter * 50}vh) rotate(${sx * scatter * 120}deg)`;
@@ -586,6 +588,7 @@ window.addEventListener('resize', resize);
 const threeIntro = document.getElementById('three-intro');
 const zoomScroll = document.getElementById('zoom-scroll');
 const clock = new THREE.Clock();
+let jP = 0, zP = 0; // smoothed scroll progress per 3D scene
 
 function loop() {
   const et = clock.getElapsedTime();
@@ -594,14 +597,15 @@ function loop() {
   /* jacks */
   const jRect = threeIntro.getBoundingClientRect();
   if (jRect.bottom > 0 && jRect.top < innerHeight) {
-    const jp = Math.min(1, Math.max(0, -jRect.top / (jRect.height - innerHeight)));
+    const jpTarget = Math.min(1, Math.max(0, -jRect.top / (jRect.height - innerHeight)));
+    jP += (jpTarget - jP) * 0.05; // smoothed
     jacks.forEach(j => {
       j.rotation.x += j.userData.rs; j.rotation.y += j.userData.rs * 1.4;
-      j.position.y = j.userData.baseY + Math.sin(et * j.userData.fs + j.userData.fy) * 0.5 - jp * 6;
+      j.position.y = j.userData.baseY + Math.sin(et * j.userData.fs + j.userData.fy) * 0.5 - jP * 6;
     });
     jCam.position.x += ((cmx * 1.4) - jCam.position.x) * 0.04;
     jCam.position.y += ((-cmy * 0.9) - jCam.position.y) * 0.04;
-    jCam.position.z = 11 - jp * 5;
+    jCam.position.z = 11 - jP * 5;
     jCam.lookAt(0, 0, 0);
     jr.render(jScene, jCam);
   }
@@ -609,8 +613,9 @@ function loop() {
   /* zoom */
   const zRect = zoomScroll.getBoundingClientRect();
   if (zRect.bottom > 0 && zRect.top < innerHeight) {
-    const zp = Math.min(1, Math.max(0, -zRect.top / (zRect.height - innerHeight)));
-    const e = zp < 0.5 ? 2 * zp * zp : 1 - Math.pow(-2 * zp + 2, 2) / 2; // easeInOut
+    const zpTarget = Math.min(1, Math.max(0, -zRect.top / (zRect.height - innerHeight)));
+    zP += (zpTarget - zP) * 0.045; // smoothed: camera drifts calmly behind the scroll
+    const e = zP < 0.5 ? 2 * zP * zP : 1 - Math.pow(-2 * zP + 2, 2) / 2; // easeInOut
     const dist = 24 - e * 19.5;   // 24 -> 4.5
     const height = 10 - e * 8.2;  // 10 -> 1.8
     zCam.position.set(Math.sin(e * 0.9) * 4, height, dist);
