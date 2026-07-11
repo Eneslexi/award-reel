@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ENESLEXI. Interactive Experiences</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: auto; }
+  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #0a0a12; overflow-x: hidden; }
+  ::selection { background: #2233ff; color: #fff; }
+
+  /* ============ LOADER ============ */
+  #loader {
+    position: fixed; inset: 0; background: #050508; z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.9s cubic-bezier(0.83, 0, 0.17, 1);
+  }
+  #loader.done { transform: translateY(-100%); }
+  #loader .logo-mark {
+    color: #fff; font-size: clamp(64px, 10vw, 140px); font-weight: 800; letter-spacing: -0.04em;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+  #loader .counter {
+    position: absolute; left: 5vw; bottom: 5vh; color: #fff;
+    font-size: clamp(48px, 8vw, 110px); font-weight: 700; font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+  }
+
+  /* ============ SECTION 1: INK HERO (Buttermax vibe) ============ */
+  #hero {
+    position: relative; min-height: 100vh; background: #f2a33b; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  #hero nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 34px; position: relative; z-index: 5;
+  }
+  #hero nav .brand-dot {
+    background: #111; color: #f2a33b; border-radius: 999px; padding: 8px 18px;
+    font-weight: 800; font-size: 14px; letter-spacing: 0.08em;
+  }
+  .pill-group { display: flex; gap: 10px; }
+  .pill {
+    border: 1.5px solid #111; border-radius: 999px; padding: 9px 20px;
+    font-size: 13px; font-weight: 600; color: #111; background: transparent;
+    cursor: pointer; transition: background 0.25s, color 0.25s; letter-spacing: 0.04em;
+  }
+  .pill:hover { background: #111; color: #f2a33b; }
+  .pill.solid { background: #111; color: #f2a33b; }
+
+  #ink-wrap { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  #ink-wrap svg { width: 100%; height: 100%; }
+
+  #hero .hero-title {
+    position: absolute; top: 12vh; left: 50%; transform: translateX(-50%);
+    z-index: 3; text-align: center; white-space: nowrap;
+  }
+  #hero .hero-title .sans {
+    font-size: clamp(70px, 13vw, 190px); font-weight: 800; color: #111; letter-spacing: -0.05em;
+  }
+  #hero .hero-title .script {
+    font-family: 'Snell Roundhand', 'Brush Script MT', cursive;
+    font-size: clamp(70px, 13vw, 190px); color: #111; font-weight: 400;
+    margin-left: -0.12em;
+  }
+  #hero .hero-sub {
+    position: absolute; top: calc(12vh + clamp(80px, 14vw, 205px)); left: 50%; transform: translateX(-50%);
+    z-index: 3; font-size: 12px; letter-spacing: 0.22em; color: #111; font-weight: 600;
+    text-transform: uppercase; opacity: 0.85; white-space: nowrap;
+  }
+
+  /* floating device card */
+  #card {
+    position: absolute; top: 50%; left: 50%; z-index: 4;
+    width: clamp(180px, 22vw, 300px); aspect-ratio: 3 / 4.4;
+    transform: translate(-50%, -46%);
+    transform-style: preserve-3d; will-change: transform;
+  }
+  #card .card-inner {
+    width: 100%; height: 100%; border-radius: 14px;
+    background: linear-gradient(160deg, #efe4d4, #d9c8b2 60%, #c9b498);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6);
+    padding: 10%; display: flex; flex-direction: column; gap: 8%;
+    animation: floaty 5s ease-in-out infinite;
+  }
+  @keyframes floaty { 0%,100% { transform: translateY(0) rotate(-2deg);} 50% { transform: translateY(-16px) rotate(2deg);} }
+  #card .screen {
+    width: 100%; flex: 1.2; border-radius: 8px;
+    background: radial-gradient(circle at 30% 20%, #ff8c5a, #b03030 55%, #4a0f18);
+    box-shadow: inset 0 0 24px rgba(0,0,0,0.55);
+    position: relative; overflow: hidden;
+  }
+  #card .screen::after {
+    content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 4px);
+  }
+  #card .controls { flex: 0.7; display: flex; align-items: center; justify-content: space-between; }
+  #card .dpad { width: 34%; aspect-ratio: 1; position: relative; }
+  #card .dpad::before, #card .dpad::after {
+    content: ""; position: absolute; background: #3a3a3a; border-radius: 4px;
+  }
+  #card .dpad::before { left: 35%; top: 0; width: 30%; height: 100%; }
+  #card .dpad::after { top: 35%; left: 0; height: 30%; width: 100%; }
+  #card .btns { display: flex; gap: 12%; width: 40%; }
+  #card .btns span { flex: 1; aspect-ratio: 1; border-radius: 50%; background: #b03030; box-shadow: inset 0 -3px 5px rgba(0,0,0,0.4); }
+
+  #hero .hero-cta {
+    position: absolute; bottom: 6vh; right: 5vw; z-index: 5; display: flex; gap: 12px;
+  }
+  #hero .marquee-note {
+    position: absolute; bottom: 6.5vh; left: 5vw; z-index: 5;
+    font-size: 11px; letter-spacing: 0.18em; color: #111; font-weight: 600; text-transform: uppercase; opacity: 0.7;
+    max-width: 34ch; line-height: 1.7;
+  }
+
+  /* ============ SECTION 2: COLORFUL (Mana vibe) ============ */
+  #colorful {
+    position: relative; min-height: 160vh; overflow: clip;
+    background: linear-gradient(180deg, #f0e75a 0%, #e9ef86 55%, #fdf3e3 100%);
+  }
+  #colorful .sticky-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+  #colorful nav {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 8;
+    display: flex; justify-content: center; gap: 12px; padding: 20px;
+  }
+  #colorful nav .pill { border-color: #1e5c2f; color: #1e5c2f; }
+  #colorful nav .pill:hover { background: #1e5c2f; color: #f0e75a; }
+  #colorful .free-ship {
+    position: absolute; top: 0; left: 0; right: 0; text-align: center;
+    background: #1e5c2f; color: #f0e75a; font-size: 10px; letter-spacing: 0.2em;
+    padding: 6px; text-transform: uppercase; z-index: 9;
+  }
+  .deco { position: absolute; will-change: transform; z-index: 3; }
+  .deco svg { display: block; width: 100%; height: 100%; }
+
+  /* the can */
+  #can {
+    position: absolute; left: 50%; top: 46%; z-index: 5;
+    width: clamp(110px, 13vw, 180px); aspect-ratio: 1 / 2.1;
+    transform: translate(-50%, -50%);
+    will-change: transform;
+  }
+  #can .can-body {
+    width: 100%; height: 100%; border-radius: 16px / 26px; position: relative; overflow: hidden;
+    background:
+      linear-gradient(90deg, rgba(0,0,0,0.28) 0%, rgba(255,255,255,0.05) 12%, rgba(255,255,255,0.55) 30%, rgba(255,255,255,0.15) 52%, rgba(0,0,0,0.18) 80%, rgba(0,0,0,0.4) 100%),
+      linear-gradient(180deg, #cfe8b0 0%, #a8d47f 40%, #7fbf5a 100%);
+    box-shadow: 0 30px 50px rgba(30,60,20,0.35);
+  }
+  #can .can-top {
+    position: absolute; top: 0; left: 0; right: 0; height: 7%;
+    background: linear-gradient(180deg, #e8e8e8, #9a9a9a); border-radius: 16px 16px 0 0;
+  }
+  #can .can-label {
+    position: absolute; top: 30%; width: 100%; text-align: center;
+    font-weight: 900; font-size: clamp(18px, 2vw, 28px); letter-spacing: 0.02em; color: #1e5c2f;
+    transform: rotate(-90deg);
+  }
+  #can .can-flavor {
+    position: absolute; bottom: 12%; width: 100%; text-align: center;
+    font-size: 9px; letter-spacing: 0.25em; color: #14401f; text-transform: uppercase; font-weight: 700;
+  }
+  #colorful .flavor-btn {
+    position: absolute; left: 50%; top: 74%; transform: translateX(-50%); z-index: 6;
+    background: #1e5c2f; color: #fff; border: none; border-radius: 999px;
+    padding: 12px 26px; font-size: 13px; font-weight: 700; letter-spacing: 0.05em;
+  }
+
+  /* second half of colorful: the question block */
+  #question-block {
+    position: relative; z-index: 2; min-height: 100vh;
+    background: linear-gradient(180deg, #fdf3e3, #fbe9dd);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 12vh 6vw; gap: 26px;
+  }
+  #question-block h2 {
+    font-size: clamp(30px, 5vw, 64px); font-weight: 700; color: #6b6156; letter-spacing: 0.01em;
+    line-height: 1.15; max-width: 20ch;
+  }
+  #question-block .small { font-size: 13px; color: #8d8377; letter-spacing: 0.06em; }
+  #question-block .mini-can {
+    width: 90px; height: 150px; margin-top: 10px; position: relative;
+    animation: spinY 6s linear infinite; transform-style: preserve-3d;
+  }
+  @keyframes spinY { from { transform: rotateY(0);} to { transform: rotateY(360deg);} }
+  .tag-cloud { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; max-width: 640px; }
+  .tag {
+    background: #2f8a4a; color: #fff; border-radius: 999px; padding: 10px 20px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    opacity: 0; transform: translateY(24px) scale(0.9); transition: opacity 0.5s, transform 0.5s;
+  }
+  .tag.show { opacity: 1; transform: none; }
+
+  /* ============ SECTION 3: 3D JACKS (Lusion vibe) ============ */
+  #three-intro { position: relative; height: 220vh; background: #0a0a12; }
+  #three-intro .sticky-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+  #jacks-canvas { position: absolute; inset: 0; }
+  #three-intro .ui { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+  #three-intro .top-bar {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 30px 40px; color: #eee;
+  }
+  #three-intro .top-bar .logo { font-weight: 800; letter-spacing: 0.35em; font-size: 15px; }
+  #three-intro .top-bar .tagline {
+    font-size: 14px; line-height: 1.6; max-width: 34ch; color: #cfcfd6; text-align: left;
+  }
+  #three-intro .top-bar .talk {
+    pointer-events: auto; border: 1px solid #555; color: #eee; background: transparent;
+    border-radius: 999px; padding: 10px 22px; font-size: 12px; letter-spacing: 0.12em; cursor: pointer;
+    transition: background 0.25s, color 0.25s;
+  }
+  #three-intro .top-bar .talk:hover { background: #eee; color: #0a0a12; }
+  #three-intro .scroll-hint {
+    position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%);
+    color: #888; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+  }
+
+  /* ============ SECTION 4: SCROLL ZOOM (igloo vibe) ============ */
+  #zoom-scroll { position: relative; height: 320vh; background: #efe3e0; }
+  #zoom-scroll .sticky-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+  #zoom-canvas { position: absolute; inset: 0; }
+  #zoom-scroll .caption {
+    position: absolute; top: 42px; left: 50%; transform: translateX(-50%); z-index: 3;
+    color: #6b5a56; font-size: 11px; letter-spacing: 0.35em; text-transform: uppercase; font-weight: 600;
+  }
+
+  /* ============ FOOTER ============ */
+  #footer {
+    background: #050508; color: #eee; text-align: center; padding: 14vh 6vw;
+    display: flex; flex-direction: column; gap: 18px; align-items: center;
+  }
+  #footer h3 { font-size: clamp(28px, 4.5vw, 58px); font-weight: 800; letter-spacing: -0.02em; }
+  #footer p { color: #999; font-size: 14px; letter-spacing: 0.06em; }
+  #footer .talk {
+    border: 1px solid #444; color: #eee; background: transparent; border-radius: 999px;
+    padding: 14px 34px; font-size: 13px; letter-spacing: 0.14em; cursor: pointer;
+    transition: background 0.25s, color 0.25s;
+  }
+  #footer .talk:hover { background: #eee; color: #050508; }
+
+  @media (max-width: 700px) {
+    #hero .hero-title { white-space: normal; }
+    #three-intro .top-bar { flex-direction: column; gap: 16px; }
+    #hero .marquee-note { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="logo-mark">E.</div>
+  <div class="counter" id="counter">0</div>
+</div>
+
+<!-- SECTION 1: INK HERO -->
+<section id="hero">
+  <div id="ink-wrap">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <filter id="gooey"><feGaussianBlur in="SourceGraphic" stdDeviation="12" result="b"/><feColorMatrix in="b" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -10"/></filter>
+      </defs>
+      <g id="ink" filter="url(#gooey)" fill="#141414">
+        <ellipse id="blob1" cx="700" cy="430" rx="330" ry="150"/>
+        <ellipse id="blob2" cx="480" cy="500" rx="140" ry="70"/>
+        <ellipse id="blob3" cx="950" cy="380" rx="170" ry="80"/>
+        <ellipse id="blob4" cx="700" cy="300" rx="110" ry="55"/>
+        <circle id="drip1" cx="380" cy="620" r="26"/>
+        <circle id="drip2" cx="1060" cy="580" r="18"/>
+        <circle id="drip3" cx="620" cy="660" r="12"/>
+      </g>
+    </svg>
+  </div>
+
+  <nav>
+    <div class="pill-group">
+      <button class="pill">Shop</button>
+      <button class="pill">About</button>
+    </div>
+    <div class="brand-dot">E.</div>
+    <div class="pill-group">
+      <button class="pill">Journal</button>
+      <button class="pill solid">Cart (0)</button>
+    </div>
+  </nav>
+
+  <div class="hero-title">
+    <span class="sans">Enes</span><span class="script">lexi</span>
+  </div>
+  <div class="hero-sub">Interactive experiences, engineered to be felt</div>
+
+  <div id="card">
+    <div class="card-inner">
+      <div class="screen"></div>
+      <div class="controls">
+        <div class="dpad"></div>
+        <div class="btns"><span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="marquee-note">Every pixel reacts. Move your mouse, then scroll. This whole page is one take.</div>
+  <div class="hero-cta">
+    <button class="pill">Explore</button>
+    <button class="pill solid">Start</button>
+  </div>
+</section>
+
+<!-- SECTION 2: COLORFUL -->
+<section id="colorful">
+  <div class="sticky-stage" id="colorful-stage">
+    <div class="free-ship">Free shipping on all experiences. Scroll to unwrap.</div>
+    <nav style="top:26px;">
+      <button class="pill">Work</button>
+      <button class="pill">Learn</button>
+      <button class="pill">Subscribe</button>
+    </nav>
+
+    <!-- decorative SVG elements -->
+    <div class="deco" data-sx="-1.6" data-sy="-0.8" style="left:6%; top:16%; width:200px; height:230px;">
+      <svg viewBox="0 0 100 115"><path d="M50 6 C74 6 92 26 92 52 C92 84 70 108 50 108 C30 108 8 84 8 52 C8 26 26 6 50 6 Z" fill="#e23b2e"/><circle cx="35" cy="45" r="5" fill="#f9d84a"/><circle cx="62" cy="38" r="5" fill="#f9d84a"/><path d="M30 70 Q50 86 70 70" stroke="#7a150d" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M22 20 L34 30 M78 20 L66 30" stroke="#e23b2e" stroke-width="10" stroke-linecap="round"/></svg>
+    </div>
+    <div class="deco" data-sx="1.4" data-sy="-1.2" style="right:10%; top:14%; width:120px; height:120px;">
+      <svg viewBox="0 0 100 100"><g fill="#f28c33"><circle cx="50" cy="24" r="15"/><circle cx="76" cy="50" r="15"/><circle cx="50" cy="76" r="15"/><circle cx="24" cy="50" r="15"/></g><circle cx="50" cy="50" r="12" fill="#fff3cf"/></svg>
+    </div>
+    <div class="deco" data-sx="-1.1" data-sy="1.3" style="left:16%; bottom:18%; width:110px; height:110px;">
+      <svg viewBox="0 0 100 100"><g fill="#e2582e"><circle cx="50" cy="26" r="13"/><circle cx="72" cy="48" r="13"/><circle cx="50" cy="70" r="13"/><circle cx="28" cy="48" r="13"/></g><circle cx="50" cy="48" r="10" fill="#ffd9c9"/></svg>
+    </div>
+    <div class="deco" data-sx="1.7" data-sy="0.9" style="right:14%; bottom:22%; width:150px; height:150px;">
+      <svg viewBox="0 0 100 100"><path d="M50 4 A46 46 0 0 1 96 50 L50 50 Z" fill="#bde36a" stroke="#5c8a2a" stroke-width="3"/><path d="M56 14 L60 44 M66 20 L64 46 M78 30 L70 48" stroke="#eef8d8" stroke-width="3"/></svg>
+    </div>
+    <div class="deco" data-sx="-2.0" data-sy="0.4" style="left:34%; top:12%; width:90px; height:90px;">
+      <svg viewBox="0 0 100 100"><path d="M50 90 C20 70 20 30 50 14 C80 30 80 70 50 90 Z" fill="#4a9440"/><path d="M50 88 L50 20" stroke="#2f6b2a" stroke-width="4"/></svg>
+    </div>
+    <div class="deco" data-sx="2.2" data-sy="-0.5" style="right:30%; top:24%; width:80px; height:80px;">
+      <svg viewBox="0 0 100 100"><path d="M14 70 Q30 40 56 44 Q84 48 88 28 Q92 52 66 62 Q36 72 14 70 Z" fill="#a9c8ef"/></svg>
+    </div>
+
+    <div id="can">
+      <div class="can-body">
+        <div class="can-top"></div>
+        <div class="can-label">ENESLEXI</div>
+        <div class="can-flavor">Melon &amp; Mint</div>
+      </div>
+    </div>
+    <button class="flavor-btn">Melon &amp; Mint</button>
+  </div>
+
+  <div id="question-block">
+    <h2>CODE ? DESIGN ?<br>WHAT ARE WE TALKING ABOUT?</h2>
+    <div class="small">(we are going to tell each other the real things)</div>
+    <div class="mini-can">
+      <div class="can-body" style="width:100%;height:100%;border-radius:12px/20px;position:relative;background:linear-gradient(90deg, rgba(0,0,0,0.25), rgba(255,255,255,0.5) 30%, rgba(0,0,0,0.2) 85%), linear-gradient(180deg,#cfe8b0,#7fbf5a);">
+        <div style="position:absolute;top:0;left:0;right:0;height:8%;background:linear-gradient(180deg,#e8e8e8,#9a9a9a);border-radius:12px 12px 0 0;"></div>
+      </div>
+    </div>
+    <div class="tag-cloud">
+      <span class="tag">Natural Motion</span>
+      <span class="tag">Scroll Storytelling</span>
+      <span class="tag">3D Everything</span>
+      <span class="tag">Zero Lag</span>
+      <span class="tag">Antioxidant Design</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: 3D JACKS -->
+<section id="three-intro">
+  <div class="sticky-stage">
+    <div id="jacks-canvas"></div>
+    <div class="ui">
+      <div class="top-bar">
+        <div class="logo">ENESLEXI</div>
+        <div class="tagline">We create 3D visual storytelling and interactive web experiences that help brands stand out.</div>
+        <button class="talk">LET'S TALK</button>
+      </div>
+      <div class="scroll-hint">Scroll to explore</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: SCROLL ZOOM -->
+<section id="zoom-scroll">
+  <div class="sticky-stage">
+    <div id="zoom-canvas"></div>
+    <div class="caption">The scroll zoom trick. No video. Pure 3D.</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<section id="footer">
+  <h3>Want a site that feels like this?</h3>
+  <p>Follow the journey. Comment "SKILLS" and I will send the breakdown.</p>
+  <button class="talk">@enesa.co</button>
+</section>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+/* ================= LOADER ================= */
+const counter = document.getElementById('counter');
+const loader = document.getElementById('loader');
+let n = 0;
+const tick = () => {
+  n += Math.max(1, Math.round((100 - n) * 0.06));
+  if (n >= 100) { n = 100; counter.textContent = n; setTimeout(() => loader.classList.add('done'), 350); return; }
+  counter.textContent = n;
+  setTimeout(tick, 40 + Math.random() * 70);
+};
+window.addEventListener('load', tick);
+setTimeout(() => { if (n < 100) { n = 99; } }, 4000); // safety
+
+/* ================= HERO: ink morph + card tilt ================= */
+const blobs = ['blob1','blob2','blob3','blob4','drip1','drip2','drip3'].map(id => document.getElementById(id));
+let t = 0;
+function animateInk() {
+  t += 0.008;
+  blobs.forEach((b, i) => {
+    const s = 1 + Math.sin(t * (1 + i * 0.3) + i) * 0.12;
+    const dx = Math.sin(t * 0.7 + i * 2) * 26;
+    const dy = Math.cos(t * 0.5 + i * 1.4) * 18;
+    b.setAttribute('transform', `translate(${dx} ${dy}) scale(${s})`);
+    b.style.transformOrigin = 'center';
+  });
+  requestAnimationFrame(animateInk);
+}
+animateInk();
+
+const card = document.getElementById('card');
+let mx = 0, my = 0, cmx = 0, cmy = 0;
+window.addEventListener('mousemove', e => {
+  mx = (e.clientX / innerWidth - 0.5) * 2;
+  my = (e.clientY / innerHeight - 0.5) * 2;
+});
+function tiltCard() {
+  cmx += (mx - cmx) * 0.06; cmy += (my - cmy) * 0.06;
+  card.style.transform = `translate(-50%, -46%) rotateY(${cmx * 22}deg) rotateX(${-cmy * 16}deg)`;
+  requestAnimationFrame(tiltCard);
+}
+tiltCard();
+
+/* ================= COLORFUL: scroll scatter ================= */
+const colorful = document.getElementById('colorful');
+const decos = [...document.querySelectorAll('.deco')];
+const can = document.getElementById('can');
+function colorfulScroll() {
+  const r = colorful.getBoundingClientRect();
+  const p = Math.min(1, Math.max(0, -r.top / (r.height - innerHeight))); // 0..1 through section
+  const scatter = Math.min(1, p * 2.2);
+  decos.forEach(d => {
+    const sx = parseFloat(d.dataset.sx), sy = parseFloat(d.dataset.sy);
+    d.style.transform = `translate(${sx * scatter * 60}vw, ${sy * scatter * 50}vh) rotate(${sx * scatter * 120}deg)`;
+    d.style.opacity = 1 - scatter * 0.25;
+  });
+  // can rolls down and away
+  can.style.transform = `translate(calc(-50% + ${scatter * -8}vw), calc(-50% + ${scatter * 68}vh)) rotate(${scatter * 240}deg) scale(${1 - scatter * 0.25})`;
+}
+
+/* tags reveal */
+const tags = [...document.querySelectorAll('.tag')];
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) tags.forEach((tag, i) => setTimeout(() => tag.classList.add('show'), i * 140));
+}), { threshold: 0.4 });
+io.observe(document.querySelector('.tag-cloud'));
+
+/* ================= 3D JACKS (Lusion vibe) ================= */
+const jacksWrap = document.getElementById('jacks-canvas');
+const jr = new THREE.WebGLRenderer({ antialias: true });
+jr.setPixelRatio(Math.min(devicePixelRatio, 2));
+jacksWrap.appendChild(jr.domElement);
+const jScene = new THREE.Scene();
+jScene.background = new THREE.Color(0x0a0a12);
+jScene.fog = new THREE.Fog(0x0a0a12, 8, 26);
+const jCam = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+jCam.position.set(0, 0, 11);
+
+jScene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(4, 6, 8); jScene.add(key);
+const rim = new THREE.DirectionalLight(0x4455ff, 1.2); rim.position.set(-6, -3, -4); jScene.add(rim);
+
+function makeJack(mat) {
+  const g = new THREE.Group();
+  const arm = new THREE.CapsuleGeometry(0.16, 0.75, 8, 16);
+  const a1 = new THREE.Mesh(arm, mat);
+  const a2 = new THREE.Mesh(arm, mat); a2.rotation.z = Math.PI / 2;
+  const a3 = new THREE.Mesh(arm, mat); a3.rotation.x = Math.PI / 2;
+  g.add(a1, a2, a3);
+  return g;
+}
+const mats = [
+  new THREE.MeshStandardMaterial({ color: 0x2233ee, roughness: 0.25, metalness: 0.05 }),
+  new THREE.MeshStandardMaterial({ color: 0xf2ede4, roughness: 0.3, metalness: 0.02 }),
+  new THREE.MeshStandardMaterial({ color: 0x15151c, roughness: 0.35, metalness: 0.1 }),
+];
+const jacks = [];
+for (let i = 0; i < 34; i++) {
+  const j = makeJack(mats[i % 5 === 0 ? 2 : (i % 2)]);
+  j.position.set((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
+  j.rotation.set(Math.random() * 6, Math.random() * 6, Math.random() * 6);
+  const s = 0.7 + Math.random() * 1.6; j.scale.setScalar(s);
+  j.userData = {
+    rs: (Math.random() - 0.5) * 0.012,
+    fy: Math.random() * 6.28,
+    fs: 0.3 + Math.random() * 0.5,
+    baseY: j.position.y,
+  };
+  jScene.add(j); jacks.push(j);
+}
+
+/* ================= ZOOM SCENE (igloo vibe) ================= */
+const zoomWrap = document.getElementById('zoom-canvas');
+const zr = new THREE.WebGLRenderer({ antialias: true });
+zr.setPixelRatio(Math.min(devicePixelRatio, 2));
+zoomWrap.appendChild(zr.domElement);
+const zScene = new THREE.Scene();
+zScene.background = new THREE.Color(0xefe3e0);
+zScene.fog = new THREE.Fog(0xefe3e0, 6, 30);
+const zCam = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+
+zScene.add(new THREE.HemisphereLight(0xfff0ea, 0xd8c7c2, 1.1));
+const zSun = new THREE.DirectionalLight(0xffe8d8, 1.6); zSun.position.set(5, 8, 3); zSun.castShadow = false; zScene.add(zSun);
+
+const snowMat = new THREE.MeshStandardMaterial({ color: 0xf6ecea, roughness: 0.95 });
+/* bumpy ground */
+const groundGeo = new THREE.PlaneGeometry(60, 60, 90, 90);
+const pos = groundGeo.attributes.position;
+for (let i = 0; i < pos.count; i++) {
+  const x = pos.getX(i), y = pos.getY(i);
+  const d = Math.hypot(x, y);
+  let h = Math.sin(x * 0.5) * Math.cos(y * 0.42) * 0.5 + Math.sin(x * 0.13 + y * 0.21) * 0.9;
+  h *= Math.min(1, d / 4);   // flat near igloo
+  pos.setZ(i, h);
+}
+groundGeo.computeVertexNormals();
+const ground = new THREE.Mesh(groundGeo, snowMat);
+ground.rotation.x = -Math.PI / 2;
+zScene.add(ground);
+
+/* igloo: dome + entrance tunnel with brick lines */
+const igloo = new THREE.Group();
+const dome = new THREE.Mesh(new THREE.SphereGeometry(2.2, 48, 24, 0, Math.PI * 2, 0, Math.PI / 2), snowMat);
+igloo.add(dome);
+const tunnel = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1.8, 24, 1, false, 0, Math.PI), snowMat);
+tunnel.rotation.z = Math.PI / 2; tunnel.rotation.y = Math.PI / 2;
+tunnel.position.set(0, 0, 2.6);
+igloo.add(tunnel);
+const doorMat = new THREE.MeshBasicMaterial({ color: 0x3a2e2c });
+const door = new THREE.Mesh(new THREE.CircleGeometry(0.72, 24, 0, Math.PI), doorMat);
+door.position.set(0, 0.02, 3.52); door.rotation.y = 0;
+igloo.add(door);
+/* brick lines on dome */
+const lineMat = new THREE.LineBasicMaterial({ color: 0xd9c8c4, transparent: true, opacity: 0.55 });
+for (let ring = 1; ring <= 5; ring++) {
+  const y = Math.sin((ring / 6) * Math.PI / 2) * 2.2;
+  const r = Math.cos((ring / 6) * Math.PI / 2) * 2.2;
+  const pts = [];
+  for (let a = 0; a <= 64; a++) pts.push(new THREE.Vector3(Math.cos(a / 64 * Math.PI * 2) * r, y, Math.sin(a / 64 * Math.PI * 2) * r));
+  igloo.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
+}
+zScene.add(igloo);
+
+/* scattered snow rocks */
+for (let i = 0; i < 26; i++) {
+  const rock = new THREE.Mesh(new THREE.IcosahedronGeometry(0.12 + Math.random() * 0.3, 0), snowMat);
+  const ang = Math.random() * Math.PI * 2, rad = 4 + Math.random() * 14;
+  rock.position.set(Math.cos(ang) * rad, 0.05, Math.sin(ang) * rad);
+  rock.rotation.set(Math.random(), Math.random(), Math.random());
+  zScene.add(rock);
+}
+
+/* ================= SIZING ================= */
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  jr.setSize(w, h); jCam.aspect = w / h; jCam.updateProjectionMatrix();
+  zr.setSize(w, h); zCam.aspect = w / h; zCam.updateProjectionMatrix();
+}
+resize();
+window.addEventListener('resize', resize);
+
+/* ================= MAIN LOOP ================= */
+const threeIntro = document.getElementById('three-intro');
+const zoomScroll = document.getElementById('zoom-scroll');
+const clock = new THREE.Clock();
+
+function loop() {
+  const et = clock.getElapsedTime();
+  colorfulScroll();
+
+  /* jacks */
+  const jRect = threeIntro.getBoundingClientRect();
+  if (jRect.bottom > 0 && jRect.top < innerHeight) {
+    const jp = Math.min(1, Math.max(0, -jRect.top / (jRect.height - innerHeight)));
+    jacks.forEach(j => {
+      j.rotation.x += j.userData.rs; j.rotation.y += j.userData.rs * 1.4;
+      j.position.y = j.userData.baseY + Math.sin(et * j.userData.fs + j.userData.fy) * 0.5 - jp * 6;
+    });
+    jCam.position.x += ((cmx * 1.4) - jCam.position.x) * 0.04;
+    jCam.position.y += ((-cmy * 0.9) - jCam.position.y) * 0.04;
+    jCam.position.z = 11 - jp * 5;
+    jCam.lookAt(0, 0, 0);
+    jr.render(jScene, jCam);
+  }
+
+  /* zoom */
+  const zRect = zoomScroll.getBoundingClientRect();
+  if (zRect.bottom > 0 && zRect.top < innerHeight) {
+    const zp = Math.min(1, Math.max(0, -zRect.top / (zRect.height - innerHeight)));
+    const e = zp < 0.5 ? 2 * zp * zp : 1 - Math.pow(-2 * zp + 2, 2) / 2; // easeInOut
+    const dist = 24 - e * 19.5;   // 24 -> 4.5
+    const height = 10 - e * 8.2;  // 10 -> 1.8
+    zCam.position.set(Math.sin(e * 0.9) * 4, height, dist);
+    zCam.lookAt(0, 0.8, 2.4);
+    zr.render(zScene, zCam);
+  }
+
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
