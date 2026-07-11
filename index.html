@@ -125,10 +125,20 @@
     max-width: 34ch; line-height: 1.7;
   }
 
-  /* layered curtain transitions: each section slides over the last */
+  /* layered curtain transitions: each section enters with a dome curve
+     that flattens as it covers the screen (JS animates the radius) */
   #colorful, #three-intro, #zoom-scroll, #footer {
-    border-radius: clamp(28px, 4vw, 56px) clamp(28px, 4vw, 56px) 0 0;
+    border-radius: 50% 50% 0 0 / 48px 48px 0 0;
   }
+  /* color feather: the previous section's tone bleeds into the new one */
+  #colorful::before, #three-intro::before, #zoom-scroll::before, #footer::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 18vh;
+    pointer-events: none; z-index: 6;
+  }
+  #colorful::before   { background: linear-gradient(180deg, rgba(242,163,59,0.45), transparent); }
+  #three-intro::before{ background: linear-gradient(180deg, rgba(253,243,227,0.35), transparent); }
+  #zoom-scroll::before{ background: linear-gradient(180deg, rgba(10,10,18,0.4), transparent); }
+  #footer::before     { background: linear-gradient(180deg, rgba(234,208,200,0.3), transparent); }
   #hero { z-index: 1; will-change: transform; }
   #colorful { z-index: 10; }
   #three-intro { z-index: 20; overflow: clip; }
@@ -771,7 +781,17 @@ function curtains() {
   const fx = clamp01((vh - fTop) / vh);
   zoomStage.style.transform = `scale(${1 - fx * 0.035})`;
   zoomShade.style.opacity = fx * 0.35;
+
+  /* dome morph: sections enter with a deep curve, flatten once inside */
+  for (const sec of domeSections) {
+    const t = sec.getBoundingClientRect().top;
+    if (t > vh + 60 || t < -vh) continue; // off-screen, skip
+    const ex = clamp01((vh - t) / vh);
+    const vr = (1 - ex) * vh * 0.16 + ex * 48;
+    sec.style.borderRadius = `50% 50% 0 0 / ${vr}px ${vr}px 0 0`;
+  }
 }
+const domeSections = [colorful, threeIntro, zoomScroll, footerEl];
 
 function loop() {
   const et = clock.getElapsedTime();
