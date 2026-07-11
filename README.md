@@ -1,5 +1,7 @@
 # Award Reel · Ödüllü Site Hissi Veren İnteraktif Landing Page
 
+**Canlı Demo:** [eneslexi.github.io/award-reel](https://eneslexi.github.io/award-reel/)
+
 Tek HTML dosyasıyla, framework kullanmadan yazılmış interaktif bir landing page. Amaç, "award-winning" sitelerdeki o farklı hissin aslında birkaç temel tekniğin birleşimi olduğunu göstermek: scroll'un bir deneyime dönüşmesi, tepki veren bir 3D sahne ve daha içerik yüklenmeden tonu belirleyen bir loader.
 
 **Canlı akış:** Loader → Mürekkep Hero → Renkli Scroll Bölümü → 3D Intro → Scroll Zoom Finali
