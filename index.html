@@ -3,11 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ENESLEXI. Interactive Experiences</title>
+<title>enesa.co · Interactive Experiences</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=Yellowtail&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: auto; }
-  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #0a0a12; overflow-x: hidden; }
+  body { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; background: #0a0a12; overflow-x: hidden; }
+  h1, h2, h3, .sans, .logo, .brand-dot, .counter, .logo-mark { font-family: 'Archivo', sans-serif; }
   ::selection { background: #2233ff; color: #fff; }
 
   /* ============ LOADER ============ */
@@ -61,9 +65,15 @@
     font-size: clamp(70px, 13vw, 190px); font-weight: 800; color: #111; letter-spacing: -0.05em;
   }
   #hero .hero-title .script {
-    font-family: 'Snell Roundhand', 'Brush Script MT', cursive;
+    font-family: 'Yellowtail', 'Snell Roundhand', cursive;
     font-size: clamp(70px, 13vw, 190px); color: #111; font-weight: 400;
-    margin-left: -0.12em;
+    margin-left: 0.02em;
+  }
+  /* film grain for that rich, shot-on-screen texture */
+  .grain { position: absolute; inset: 0; z-index: 6; pointer-events: none; opacity: 0.5; mix-blend-mode: overlay; }
+  .grain::after {
+    content: ""; position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
   }
   #hero .hero-sub {
     position: absolute; top: calc(12vh + clamp(80px, 14vw, 205px)); left: 50%; transform: translateX(-50%);
@@ -154,8 +164,9 @@
     background: linear-gradient(180deg, #e8e8e8, #9a9a9a); border-radius: 16px 16px 0 0;
   }
   #can .can-label {
-    position: absolute; top: 30%; width: 100%; text-align: center;
-    font-weight: 900; font-size: clamp(18px, 2vw, 28px); letter-spacing: 0.02em; color: #1e5c2f;
+    position: absolute; top: 34%; width: 100%; text-align: center;
+    font-family: 'Archivo', sans-serif;
+    font-weight: 900; font-size: clamp(13px, 1.5vw, 21px); letter-spacing: 0.03em; color: #1e5c2f;
     transform: rotate(-90deg);
   }
   #can .can-flavor {
@@ -251,7 +262,7 @@
 
 <!-- LOADER -->
 <div id="loader">
-  <div class="logo-mark">E.</div>
+  <div class="logo-mark">e.</div>
   <div class="counter" id="counter">0</div>
 </div>
 
@@ -279,7 +290,7 @@
       <button class="pill">Shop</button>
       <button class="pill">About</button>
     </div>
-    <div class="brand-dot">E.</div>
+    <div class="brand-dot">e.</div>
     <div class="pill-group">
       <button class="pill">Journal</button>
       <button class="pill solid">Cart (0)</button>
@@ -287,8 +298,9 @@
   </nav>
 
   <div class="hero-title">
-    <span class="sans">Enes</span><span class="script">lexi</span>
+    <span class="sans">enesa</span><span class="script">.co</span>
   </div>
+  <div class="grain"></div>
   <div class="hero-sub">Interactive experiences, engineered to be felt</div>
 
   <div id="card">
@@ -341,7 +353,7 @@
     <div id="can">
       <div class="can-body">
         <div class="can-top"></div>
-        <div class="can-label">ENESLEXI</div>
+        <div class="can-label">ENESA.CO</div>
         <div class="can-flavor">Melon &amp; Mint</div>
       </div>
     </div>
@@ -372,7 +384,7 @@
     <div id="jacks-canvas"></div>
     <div class="ui">
       <div class="top-bar">
-        <div class="logo">ENESLEXI</div>
+        <div class="logo">ENESA.CO</div>
         <div class="tagline">We create 3D visual storytelling and interactive web experiences that help brands stand out.</div>
         <button class="talk">LET'S TALK</button>
       </div>
@@ -397,10 +409,14 @@
 </section>
 
 <script type="importmap">
-{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
 </script>
 <script type="module">
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 /* ================= LOADER ================= */
 const counter = document.getElementById('counter');
@@ -474,37 +490,44 @@ io.observe(document.querySelector('.tag-cloud'));
 const jacksWrap = document.getElementById('jacks-canvas');
 const jr = new THREE.WebGLRenderer({ antialias: true });
 jr.setPixelRatio(Math.min(devicePixelRatio, 2));
+jr.toneMapping = THREE.ACESFilmicToneMapping;
+jr.toneMappingExposure = 1.15;
 jacksWrap.appendChild(jr.domElement);
 const jScene = new THREE.Scene();
 jScene.background = new THREE.Color(0x0a0a12);
-jScene.fog = new THREE.Fog(0x0a0a12, 8, 26);
+jScene.fog = new THREE.Fog(0x0a0a12, 9, 30);
 const jCam = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
 jCam.position.set(0, 0, 11);
 
-jScene.add(new THREE.AmbientLight(0xffffff, 0.5));
-const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(4, 6, 8); jScene.add(key);
-const rim = new THREE.DirectionalLight(0x4455ff, 1.2); rim.position.set(-6, -3, -4); jScene.add(rim);
+/* studio environment: this is what gives plastic its rich reflections */
+const pmrem = new THREE.PMREMGenerator(jr);
+const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+jScene.environment = envTex;
+
+const key = new THREE.DirectionalLight(0xfff2e0, 1.6); key.position.set(4, 6, 8); jScene.add(key);
+const rim = new THREE.DirectionalLight(0x4455ff, 1.4); rim.position.set(-6, -3, -4); jScene.add(rim);
 
 function makeJack(mat) {
   const g = new THREE.Group();
-  const arm = new THREE.CapsuleGeometry(0.16, 0.75, 8, 16);
+  const arm = new THREE.CapsuleGeometry(0.16, 0.75, 12, 24);
   const a1 = new THREE.Mesh(arm, mat);
   const a2 = new THREE.Mesh(arm, mat); a2.rotation.z = Math.PI / 2;
   const a3 = new THREE.Mesh(arm, mat); a3.rotation.x = Math.PI / 2;
   g.add(a1, a2, a3);
   return g;
 }
+/* glossy clearcoat plastic, Lusion style */
 const mats = [
-  new THREE.MeshStandardMaterial({ color: 0x2233ee, roughness: 0.25, metalness: 0.05 }),
-  new THREE.MeshStandardMaterial({ color: 0xf2ede4, roughness: 0.3, metalness: 0.02 }),
-  new THREE.MeshStandardMaterial({ color: 0x15151c, roughness: 0.35, metalness: 0.1 }),
+  new THREE.MeshPhysicalMaterial({ color: 0x1f2ae8, roughness: 0.32, metalness: 0.0, clearcoat: 1, clearcoatRoughness: 0.12, envMapIntensity: 1.1 }),
+  new THREE.MeshPhysicalMaterial({ color: 0xf4efe6, roughness: 0.38, metalness: 0.0, clearcoat: 0.9, clearcoatRoughness: 0.18, envMapIntensity: 0.9 }),
+  new THREE.MeshPhysicalMaterial({ color: 0x101018, roughness: 0.3, metalness: 0.05, clearcoat: 1, clearcoatRoughness: 0.1, envMapIntensity: 1.2 }),
 ];
 const jacks = [];
-for (let i = 0; i < 34; i++) {
+for (let i = 0; i < 38; i++) {
   const j = makeJack(mats[i % 5 === 0 ? 2 : (i % 2)]);
   j.position.set((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
   j.rotation.set(Math.random() * 6, Math.random() * 6, Math.random() * 6);
-  const s = 0.7 + Math.random() * 1.6; j.scale.setScalar(s);
+  const s = 0.7 + Math.random() * 1.8; j.scale.setScalar(s);
   j.userData = {
     rs: (Math.random() - 0.5) * 0.012,
     fy: Math.random() * 6.28,
@@ -518,23 +541,31 @@ for (let i = 0; i < 34; i++) {
 const zoomWrap = document.getElementById('zoom-canvas');
 const zr = new THREE.WebGLRenderer({ antialias: true });
 zr.setPixelRatio(Math.min(devicePixelRatio, 2));
+zr.toneMapping = THREE.ACESFilmicToneMapping;
+zr.toneMappingExposure = 1.05;
 zoomWrap.appendChild(zr.domElement);
 const zScene = new THREE.Scene();
 zScene.background = new THREE.Color(0xefe3e0);
-zScene.fog = new THREE.Fog(0xefe3e0, 6, 30);
+zScene.fog = new THREE.Fog(0xefe3e0, 7, 34);
 const zCam = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
 
-zScene.add(new THREE.HemisphereLight(0xfff0ea, 0xd8c7c2, 1.1));
-const zSun = new THREE.DirectionalLight(0xffe8d8, 1.6); zSun.position.set(5, 8, 3); zSun.castShadow = false; zScene.add(zSun);
+const zPmrem = new THREE.PMREMGenerator(zr);
+zScene.environment = zPmrem.fromScene(new RoomEnvironment(), 0.06).texture;
 
-const snowMat = new THREE.MeshStandardMaterial({ color: 0xf6ecea, roughness: 0.95 });
-/* bumpy ground */
-const groundGeo = new THREE.PlaneGeometry(60, 60, 90, 90);
+zScene.add(new THREE.HemisphereLight(0xfff0ea, 0xcfb8b2, 0.9));
+const zSun = new THREE.DirectionalLight(0xffdfc4, 2.0); zSun.position.set(6, 7, 3); zSun.castShadow = false; zScene.add(zSun);
+const zFill = new THREE.DirectionalLight(0xbfd2ff, 0.5); zFill.position.set(-5, 3, -4); zScene.add(zFill);
+
+const snowMat = new THREE.MeshStandardMaterial({ color: 0xf6ecea, roughness: 0.92, envMapIntensity: 0.35 });
+/* bumpy ground: two noise octaves for finer, more detailed dunes */
+const groundGeo = new THREE.PlaneGeometry(60, 60, 160, 160);
 const pos = groundGeo.attributes.position;
 for (let i = 0; i < pos.count; i++) {
   const x = pos.getX(i), y = pos.getY(i);
   const d = Math.hypot(x, y);
-  let h = Math.sin(x * 0.5) * Math.cos(y * 0.42) * 0.5 + Math.sin(x * 0.13 + y * 0.21) * 0.9;
+  let h = Math.sin(x * 0.5) * Math.cos(y * 0.42) * 0.5
+        + Math.sin(x * 0.13 + y * 0.21) * 0.9
+        + Math.sin(x * 1.7 + y * 0.9) * Math.cos(x * 0.8 - y * 1.3) * 0.12; // fine detail
   h *= Math.min(1, d / 4);   // flat near igloo
   pos.setZ(i, h);
 }
@@ -545,8 +576,24 @@ zScene.add(ground);
 
 /* igloo: dome + entrance tunnel with brick lines */
 const igloo = new THREE.Group();
-const dome = new THREE.Mesh(new THREE.SphereGeometry(2.2, 48, 24, 0, Math.PI * 2, 0, Math.PI / 2), snowMat);
+const dome = new THREE.Mesh(new THREE.SphereGeometry(2.2, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2), snowMat);
 igloo.add(dome);
+/* soft fake contact shadow under the igloo */
+const shadowCanvas = document.createElement('canvas');
+shadowCanvas.width = shadowCanvas.height = 128;
+const sctx = shadowCanvas.getContext('2d');
+const grad = sctx.createRadialGradient(64, 64, 8, 64, 64, 64);
+grad.addColorStop(0, 'rgba(90,60,55,0.38)');
+grad.addColorStop(1, 'rgba(90,60,55,0)');
+sctx.fillStyle = grad; sctx.fillRect(0, 0, 128, 128);
+const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+const contactShadow = new THREE.Mesh(
+  new THREE.PlaneGeometry(7.5, 7.5),
+  new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false })
+);
+contactShadow.rotation.x = -Math.PI / 2;
+contactShadow.position.y = 0.02;
+igloo.add(contactShadow);
 const tunnel = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1.8, 24, 1, false, 0, Math.PI), snowMat);
 tunnel.rotation.z = Math.PI / 2; tunnel.rotation.y = Math.PI / 2;
 tunnel.position.set(0, 0, 2.6);
