@@ -793,8 +793,40 @@ function curtains() {
 }
 const domeSections = [colorful, threeIntro, zoomScroll, footerEl];
 
+/* ================= AUTOPILOT: press A to film hands-free =================
+   A = start/stop, Esc or any wheel/touch = stop.
+   Scrolls the whole page in ~AUTO_SECONDS with a soft ramp-up,
+   and drives a fake mouse so tilt + parallax stay alive on camera. */
+const AUTO_SECONDS = 55;
+let autoOn = false, autoY = 0, autoRamp = 0, lastNow = performance.now();
+window.addEventListener('keydown', e => {
+  if (e.key.toLowerCase() === 'a') {
+    autoOn = !autoOn;
+    if (autoOn) { autoY = scrollY; autoRamp = 0; }
+  }
+  if (e.key === 'Escape') autoOn = false;
+});
+['wheel', 'touchstart'].forEach(ev =>
+  window.addEventListener(ev, () => { autoOn = false; }, { passive: true }));
+
+function autopilot(et) {
+  const now = performance.now();
+  const dt = Math.min(0.05, (now - lastNow) / 1000);
+  lastNow = now;
+  if (!autoOn) return;
+  autoRamp = Math.min(1, autoRamp + dt / 2.5); // 2.5s soft start
+  const max = document.documentElement.scrollHeight - innerHeight;
+  autoY = Math.min(max, autoY + (max / AUTO_SECONDS) * autoRamp * dt);
+  window.scrollTo(0, autoY);
+  if (autoY >= max) autoOn = false; // reached the footer, stop
+  /* fake mouse: gentle figure-eight so the card and 3D camera breathe */
+  mx = Math.sin(et * 0.45) * 0.55;
+  my = Math.cos(et * 0.3) * 0.35;
+}
+
 function loop() {
   const et = clock.getElapsedTime();
+  autopilot(et);
   colorfulScroll();
   curtains();
 
