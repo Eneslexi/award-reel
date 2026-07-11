@@ -58,15 +58,15 @@
   #ink-wrap svg { width: 100%; height: 100%; }
 
   #hero .hero-title {
-    position: absolute; top: 12vh; left: 50%; transform: translateX(-50%);
+    position: absolute; top: 7vh; left: 50%; transform: translateX(-50%);
     z-index: 3; text-align: center; white-space: nowrap;
   }
   #hero .hero-title .sans {
-    font-size: clamp(70px, 13vw, 190px); font-weight: 800; color: #111; letter-spacing: -0.05em;
+    font-size: clamp(84px, 16.5vw, 250px); font-weight: 900; color: #111; letter-spacing: -0.05em;
   }
   #hero .hero-title .script {
     font-family: 'Yellowtail', 'Snell Roundhand', cursive;
-    font-size: clamp(70px, 13vw, 190px); color: #111; font-weight: 400;
+    font-size: clamp(84px, 16.5vw, 250px); color: #111; font-weight: 400;
     margin-left: 0.02em;
   }
   /* film grain for that rich, shot-on-screen texture */
@@ -76,16 +76,16 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
   }
   #hero .hero-sub {
-    position: absolute; top: calc(12vh + clamp(80px, 14vw, 205px)); left: 50%; transform: translateX(-50%);
+    position: absolute; top: calc(7vh + clamp(96px, 18vw, 270px)); left: 50%; transform: translateX(-50%);
     z-index: 3; font-size: 12px; letter-spacing: 0.22em; color: #111; font-weight: 600;
     text-transform: uppercase; opacity: 0.85; white-space: nowrap;
   }
 
   /* floating device card */
   #card {
-    position: absolute; top: 50%; left: 50%; z-index: 4;
-    width: clamp(180px, 22vw, 300px); aspect-ratio: 3 / 4.4;
-    transform: translate(-50%, -46%);
+    position: absolute; top: 60%; left: 50%; z-index: 4;
+    width: clamp(150px, 16.5vw, 230px); aspect-ratio: 3 / 4.4;
+    transform: translate(-50%, -42%);
     transform-style: preserve-3d; will-change: transform;
   }
   #card .card-inner {
@@ -455,7 +455,7 @@ window.addEventListener('mousemove', e => {
 });
 function tiltCard() {
   cmx += (mx - cmx) * 0.06; cmy += (my - cmy) * 0.06;
-  card.style.transform = `translate(-50%, -46%) rotateY(${cmx * 22}deg) rotateX(${-cmy * 16}deg)`;
+  card.style.transform = `translate(-50%, -42%) rotateY(${cmx * 22}deg) rotateX(${-cmy * 16}deg)`;
   requestAnimationFrame(tiltCard);
 }
 tiltCard();
