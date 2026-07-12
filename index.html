@@ -176,7 +176,7 @@
   #colorful::before   { background: linear-gradient(180deg, rgba(242,163,59,0.45), transparent); }
   #three-intro::before{ background: linear-gradient(180deg, rgba(253,243,227,0.35), transparent); }
   #zoom-scroll::before{ background: linear-gradient(180deg, rgba(10,10,18,0.4), transparent); }
-  #footer::before     { background: linear-gradient(180deg, rgba(234,208,200,0.3), transparent); }
+  #footer::before     { background: linear-gradient(180deg, rgba(233,228,226,0.3), transparent); }
   #hero { z-index: 1; will-change: transform; }
   #colorful { z-index: 10; }
   #three-intro { z-index: 20; overflow: clip; }
@@ -189,7 +189,7 @@
   }
   #hero-shade  { background: #efd75a; }  /* toward the yellow section */
   #qb-shade    { background: #14141c; }  /* toward the dark 3D section */
-  #jacks-shade { background: #ead0c8; }  /* toward the pink snow scene */
+  #jacks-shade { background: #e9e4e2; }  /* toward the snow scene */
   #zoom-shade  { background: #0a0a10; }  /* toward the dark footer */
   /* dome cap: previous color bulges into the new section and shrinks away.
      transform-only animation = composited, no repaint, no jank */
@@ -319,7 +319,7 @@
   }
 
   /* ============ SECTION 4: SCROLL ZOOM (igloo vibe) ============ */
-  #zoom-scroll { position: relative; height: 750vh; background: #efe3e0; }
+  #zoom-scroll { position: relative; height: 750vh; background: #e9e4e2; }
   #zoom-scroll .sticky-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
   #zoom-canvas { position: absolute; inset: 0; }
   #zoom-scroll .caption {
@@ -500,7 +500,7 @@
 
 <!-- FOOTER -->
 <section id="footer">
-  <div class="dome-cap" style="background:#ead0c8;"></div>
+  <div class="dome-cap" style="background:#e9e4e2;"></div>
   <h3>Böyle hissettiren bir site ister misin?</h3>
   <p>Yolculuğu takip et. "WEBSITE" yaz, tüm detayları göndereyim.</p>
   <button class="talk">@enesa.co</button>
@@ -729,16 +729,17 @@ zr.shadowMap.enabled = true;
 zr.shadowMap.type = THREE.PCFSoftShadowMap;
 zoomWrap.appendChild(zr.domElement);
 const zScene = new THREE.Scene();
-zScene.background = new THREE.Color(0xead0c8);
-zScene.fog = new THREE.Fog(0xead0c8, 9, 40);
+/* overcast winter white, faint blush: igloo.inc palette */
+zScene.background = new THREE.Color(0xe9e4e2);
+zScene.fog = new THREE.Fog(0xe9e4e2, 8, 38);
 const zCam = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
 
 const zPmrem = new THREE.PMREMGenerator(zr);
 zScene.environment = zPmrem.fromScene(new RoomEnvironment(), 0.06).texture;
 
-zScene.add(new THREE.HemisphereLight(0xffe4d6, 0xc09a92, 0.55));
-/* low warm sunset sun with real shadows: this is where the depth comes from */
-const zSun = new THREE.DirectionalLight(0xffc9a3, 2.8);
+zScene.add(new THREE.HemisphereLight(0xffffff, 0xb8b2b6, 0.7));
+/* soft low sun with real shadows: this is where the depth comes from */
+const zSun = new THREE.DirectionalLight(0xfff0dd, 2.1);
 zSun.position.set(9, 5, 4);
 zSun.castShadow = true;
 zSun.shadow.mapSize.set(2048, 2048);
@@ -747,25 +748,51 @@ zSun.shadow.camera.top = 14; zSun.shadow.camera.bottom = -14;
 zSun.shadow.camera.near = 1; zSun.shadow.camera.far = 40;
 zSun.shadow.bias = -0.0004;
 zScene.add(zSun);
-const zFill = new THREE.DirectionalLight(0xaec4ff, 0.45); zFill.position.set(-5, 3, -4); zScene.add(zFill);
+const zFill = new THREE.DirectionalLight(0x9fb6d8, 0.5); zFill.position.set(-5, 3, -4); zScene.add(zFill);
 
-const snowMat = new THREE.MeshStandardMaterial({ color: 0xf8ece8, roughness: 0.9, envMapIntensity: 0.3, vertexColors: true });
-const snowMatPlain = new THREE.MeshStandardMaterial({ color: 0xf8ece8, roughness: 0.88, envMapIntensity: 0.3 });
+/* procedural snow grain: noise canvas as bump map, so snow reads as SNOW */
+const bumpC = document.createElement('canvas');
+bumpC.width = bumpC.height = 512;
+const bctx = bumpC.getContext('2d');
+const img = bctx.createImageData(512, 512);
+for (let i = 0; i < img.data.length; i += 4) {
+  const v = 118 + Math.random() * 120;
+  img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255;
+}
+bctx.putImageData(img, 0, 0);
+bctx.filter = 'blur(1px)';
+bctx.drawImage(bumpC, 0, 0);
+const bumpTex = new THREE.CanvasTexture(bumpC);
+bumpTex.wrapS = bumpTex.wrapT = THREE.RepeatWrapping;
+bumpTex.repeat.set(10, 10);
+const bumpTexFine = bumpTex.clone();
+bumpTexFine.repeat.set(3, 3);
+bumpTexFine.needsUpdate = true;
+
+const snowMat = new THREE.MeshStandardMaterial({
+  color: 0xf6f2ef, roughness: 0.94, envMapIntensity: 0.25, vertexColors: true,
+  bumpMap: bumpTex, bumpScale: 1.6,
+});
+const snowMatPlain = new THREE.MeshStandardMaterial({
+  color: 0xf6f2ef, roughness: 0.9, envMapIntensity: 0.25,
+  bumpMap: bumpTexFine, bumpScale: 0.9,
+});
 
 /* shared terrain height, used by ground AND rocks so nothing floats */
 function terrainH(x, y) {
   const d = Math.hypot(x, y);
-  let h = Math.sin(x * 0.5) * Math.cos(y * 0.42) * 0.85
-        + Math.sin(x * 0.13 + y * 0.21) * 1.5
-        + Math.sin(x * 1.7 + y * 0.9) * Math.cos(x * 0.8 - y * 1.3) * 0.18;
-  return h * Math.min(1, d / 5); // flat near igloo
+  let h = Math.sin(x * 0.5) * Math.cos(y * 0.42) * 1.15
+        + Math.sin(x * 0.13 + y * 0.21) * 2.1
+        + Math.sin(x * 0.31 - y * 0.17) * 0.7
+        + Math.sin(x * 1.7 + y * 0.9) * Math.cos(x * 0.8 - y * 1.3) * 0.22;
+  return h * Math.min(1, d / 5.5); // flat near igloo, drifts loom around it
 }
 
 /* bumpy ground with baked shading: valleys tinted pink, crests bright */
 const groundGeo = new THREE.PlaneGeometry(60, 60, 180, 180);
 const pos = groundGeo.attributes.position;
 const cols = new Float32Array(pos.count * 3);
-const cLow = new THREE.Color(0xdbb4ac), cHigh = new THREE.Color(0xfff6f2), cTmp = new THREE.Color();
+const cLow = new THREE.Color(0xc3bcc0), cHigh = new THREE.Color(0xffffff), cTmp = new THREE.Color();
 for (let i = 0; i < pos.count; i++) {
   const x = pos.getX(i), y = pos.getY(i);
   const h = terrainH(x, y);
@@ -781,48 +808,54 @@ ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 zScene.add(ground);
 
-/* igloo built from real bricks, ring by ring, like the reference */
+/* igloo: ONE smooth snow dome with brick seams CARVED into it, like packed
+   snow (igloo.inc style). Grooves = vertices pulled inward along ring
+   boundaries and staggered vertical seams, then soft noise on top. */
 const igloo = new THREE.Group();
 const R = 2.2, RINGS = 7;
-const brickShades = [0xfaf0ec, 0xf3e4de, 0xefdcd4].map(c =>
-  new THREE.MeshStandardMaterial({ color: c, roughness: 0.85, envMapIntensity: 0.3 }));
-/* dark inner dome so the gaps between bricks read as depth */
-const innerDome = new THREE.Mesh(
-  new THREE.SphereGeometry(R * 0.93, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
-  new THREE.MeshStandardMaterial({ color: 0x8a6a60, roughness: 1 })
-);
-igloo.add(innerDome);
-for (let ring = 0; ring < RINGS; ring++) {
-  const phi0 = (ring / (RINGS + 1)) * Math.PI / 2;
-  const phi1 = ((ring + 1) / (RINGS + 1)) * Math.PI / 2;
-  const y0 = R * Math.sin(phi0), y1 = R * Math.sin(phi1);
-  const rMid = R * Math.cos((phi0 + phi1) / 2);
-  const count = Math.max(6, Math.round((2 * Math.PI * rMid) / 0.8));
-  const bw = (2 * Math.PI * rMid / count) * 0.9;
-  const bh = (y1 - y0) * 0.92;
-  const geo = new THREE.BoxGeometry(bw, bh, 0.42);
-  const angOffset = (ring % 2) * (Math.PI / count); // staggered like masonry
-  for (let b = 0; b < count; b++) {
-    const a = (b / count) * Math.PI * 2 + angOffset;
-    const brick = new THREE.Mesh(geo, brickShades[(b + ring) % 3]);
-    brick.position.set(Math.cos(a) * rMid, (y0 + y1) / 2, Math.sin(a) * rMid);
-    brick.rotation.y = -a + Math.PI / 2;
-    brick.rotation.x = -(phi0 + phi1) / 2 * 0.85; // tilt inward toward dome top
-    brick.castShadow = true; brick.receiveShadow = true;
-    igloo.add(brick);
-  }
+function grooveAmount(phi, theta) {
+  const gw = 0.09;
+  const ringF = (phi / (Math.PI / 2)) * RINGS;
+  const ringI = Math.floor(ringF);
+  const fr = ringF - ringI;
+  let g = 0;
+  if (fr < gw) g = 1 - fr / gw;
+  else if (fr > 1 - gw) g = 1 - (1 - fr) / gw;
+  /* vertical seams: fewer near the top, staggered per ring like masonry */
+  const segs = Math.max(5, Math.round(14 * Math.sin(phi)));
+  const segF = (theta / (Math.PI * 2)) * segs + (ringI % 2) * 0.5;
+  const fs = segF - Math.floor(segF);
+  const gws = 0.07;
+  let gs = 0;
+  if (fs < gws) gs = 1 - fs / gws;
+  else if (fs > 1 - gws) gs = 1 - (1 - fs) / gws;
+  if (phi > Math.PI / 2 * 0.9) gs = 0; // no seams on the very top cap
+  return Math.max(g, gs * 0.85);
 }
-/* cap block on top */
-const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.62, 0.35, 12), brickShades[0]);
-cap.position.y = R * 0.97; cap.castShadow = true;
-igloo.add(cap);
+const domeGeo = new THREE.SphereGeometry(R, 200, 100, 0, Math.PI * 2, 0, Math.PI / 2);
+const dpos = domeGeo.attributes.position;
+const v = new THREE.Vector3();
+for (let i = 0; i < dpos.count; i++) {
+  v.set(dpos.getX(i), dpos.getY(i), dpos.getZ(i));
+  const len = v.length();
+  const phi = Math.PI / 2 - Math.acos(Math.min(1, Math.max(-1, v.y / len))); // 0 at rim, PI/2 at top
+  const theta = Math.atan2(v.z, v.x) + Math.PI;
+  const carve = grooveAmount(phi, theta) * 0.055;
+  const lump = (Math.sin(v.x * 7.1 + v.y * 5.3) * Math.cos(v.z * 6.7 - v.y * 4.1)) * 0.008;
+  v.setLength(R * (1 - carve) + lump * R);
+  dpos.setXYZ(i, v.x, v.y, v.z);
+}
+domeGeo.computeVertexNormals();
+const dome = new THREE.Mesh(domeGeo, snowMatPlain);
+dome.castShadow = true; dome.receiveShadow = true;
+igloo.add(dome);
 /* soft fake contact shadow under the igloo */
 const shadowCanvas = document.createElement('canvas');
 shadowCanvas.width = shadowCanvas.height = 128;
 const sctx = shadowCanvas.getContext('2d');
 const grad = sctx.createRadialGradient(64, 64, 8, 64, 64, 64);
-grad.addColorStop(0, 'rgba(90,60,55,0.38)');
-grad.addColorStop(1, 'rgba(90,60,55,0)');
+grad.addColorStop(0, 'rgba(80,85,100,0.32)');
+grad.addColorStop(1, 'rgba(80,85,100,0)');
 sctx.fillStyle = grad; sctx.fillRect(0, 0, 128, 128);
 const shadowTex = new THREE.CanvasTexture(shadowCanvas);
 const contactShadow = new THREE.Mesh(
@@ -837,29 +870,35 @@ tunnel.rotation.z = Math.PI / 2; tunnel.rotation.y = Math.PI / 2;
 tunnel.position.set(0, 0, 2.6);
 tunnel.castShadow = true; tunnel.receiveShadow = true;
 igloo.add(tunnel);
-/* arch bricks framing the entrance */
-for (let b = 0; b < 7; b++) {
-  const a = (b / 6) * Math.PI;
-  const arch = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.3, 0.34), brickShades[b % 3]);
-  arch.position.set(Math.cos(a) * 0.95, Math.sin(a) * 0.95, 3.42);
-  arch.rotation.z = a;
-  arch.castShadow = true;
-  igloo.add(arch);
-}
+/* layered snow rings around the entrance mouth (soft, not blocky) */
+[[1.02, 0.16, 3.42], [0.94, 0.13, 3.55]].forEach(([rad, tube, z]) => {
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(rad, tube, 14, 28, Math.PI), snowMatPlain);
+  ring.position.set(0, 0.02, z);
+  ring.castShadow = true; ring.receiveShadow = true;
+  igloo.add(ring);
+});
 const doorMat = new THREE.MeshBasicMaterial({ color: 0x2e211f });
 const door = new THREE.Mesh(new THREE.CircleGeometry(0.72, 24, 0, Math.PI), doorMat);
 door.position.set(0, 0.02, 3.52);
 igloo.add(door);
 zScene.add(igloo);
 
-/* scattered snow rocks, seated ON the terrain via the shared height function */
-for (let i = 0; i < 30; i++) {
-  const size = 0.14 + Math.random() * 0.34;
-  const rock = new THREE.Mesh(new THREE.IcosahedronGeometry(size, 1), snowMatPlain);
-  const ang = Math.random() * Math.PI * 2, rad = 4.5 + Math.random() * 14;
+/* snow lumps: jittered, squashed, half-buried so they read as drifts, not balls */
+for (let i = 0; i < 18; i++) {
+  const size = 0.18 + Math.random() * 0.5;
+  const lumpGeo = new THREE.IcosahedronGeometry(size, 2);
+  const lp = lumpGeo.attributes.position;
+  for (let j = 0; j < lp.count; j++) {
+    const s = 1 + (Math.random() - 0.5) * 0.25;
+    lp.setXYZ(j, lp.getX(j) * s, lp.getY(j) * s, lp.getZ(j) * s);
+  }
+  lumpGeo.computeVertexNormals();
+  const rock = new THREE.Mesh(lumpGeo, snowMatPlain);
+  const ang = Math.random() * Math.PI * 2, rad = 4.5 + Math.random() * 13;
   const rx = Math.cos(ang) * rad, rz = Math.sin(ang) * rad;
-  rock.position.set(rx, terrainH(rx, -rz) + size * 0.35, rz); // sunk into the snow
-  rock.rotation.set(Math.random(), Math.random(), Math.random());
+  rock.position.set(rx, terrainH(rx, -rz) + size * 0.15, rz); // half-buried
+  rock.scale.set(1 + Math.random() * 0.5, 0.55 + Math.random() * 0.3, 1 + Math.random() * 0.5);
+  rock.rotation.y = Math.random() * 6;
   rock.castShadow = true; rock.receiveShadow = true;
   zScene.add(rock);
 }
@@ -1028,16 +1067,16 @@ function loop() {
     }
     snowGeo.attributes.position.needsUpdate = true;
 
-    /* cinematic dolly: high aerial sweep down to the igloo door, with idle drift */
-    const dist = 26 - e * 21.8;    // 26 -> 4.2
-    const height = 12 - e * 10.4;  // 12 -> 1.6
+    /* cinematic dolly: high aerial sweep down to a LOW hero angle at the door */
+    const dist = 26 - e * 21.4;    // 26 -> 4.6
+    const height = 11 - e * 9.8;   // 11 -> 1.2, ends near the ground like the reference
     const sweep = Math.sin(e * 1.5) * 6 * (1 - e * 0.65);
     zCam.position.set(
       sweep + Math.sin(et * 0.25) * 0.2,
       height + Math.sin(et * 0.35) * 0.12,
       dist
     );
-    const lookY = 2.2 - e * 1.4; // gaze settles onto the entrance
+    const lookY = 2.0 - e * 1.1; // gaze settles onto the entrance
     zCam.lookAt(0, lookY, 2.6);
     zr.render(zScene, zCam);
   }
