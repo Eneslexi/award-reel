@@ -191,6 +191,13 @@
   #qb-shade    { background: #14141c; }  /* toward the dark 3D section */
   #jacks-shade { background: #ead0c8; }  /* toward the pink snow scene */
   #zoom-shade  { background: #0a0a10; }  /* toward the dark footer */
+  /* dome cap: previous color bulges into the new section and shrinks away.
+     transform-only animation = composited, no repaint, no jank */
+  .dome-cap {
+    position: absolute; top: -1px; left: -6%; width: 112%; height: 15vh;
+    border-radius: 0 0 50% 50% / 0 0 100% 100%;
+    transform-origin: top center; pointer-events: none; z-index: 7; will-change: transform;
+  }
 
   /* ============ SECTION 2: COLORFUL (Mana vibe) ============ */
   #colorful {
@@ -403,6 +410,7 @@
 
 <!-- SECTION 2: COLORFUL -->
 <section id="colorful">
+  <div class="dome-cap" style="background:#f2a33b;"></div>
   <div class="sticky-stage" id="colorful-stage">
     <div class="free-ship">Tüm deneyimlerde kargo bedava. Açmak için kaydır.</div>
     <nav style="top:26px;">
@@ -462,6 +470,7 @@
 
 <!-- SECTION 3: 3D JACKS -->
 <section id="three-intro">
+  <div class="dome-cap" style="background:#fdf3e3;"></div>
   <div class="sticky-stage">
     <div id="jacks-canvas"></div>
     <div class="ui">
@@ -478,6 +487,7 @@
 
 <!-- SECTION 4: SCROLL ZOOM -->
 <section id="zoom-scroll">
+  <div class="dome-cap" style="background:#0a0a12;"></div>
   <div class="sticky-stage">
     <div id="zoom-canvas"></div>
     <div class="caption">Scroll zoom hilesi. Video yok. Saf 3D.</div>
@@ -487,6 +497,7 @@
 
 <!-- FOOTER -->
 <section id="footer">
+  <div class="dome-cap" style="background:#ead0c8;"></div>
   <h3>Böyle hissettiren bir site ister misin?</h3>
   <p>Yolculuğu takip et. "WEBSITE" yaz, tüm detayları göndereyim.</p>
   <button class="talk">@enesa.co</button>
@@ -588,7 +599,9 @@ function colorfulScroll() {
   /* the can is the star: it tumbles slowly down through the entire scroll */
   const ct = Math.min(1, colP * 1.2);
   const roll = ct * ct * (3 - 2 * ct); // smoothstep: slow-fast-slow
-  can.style.transform = `translate(calc(-50% + ${Math.sin(roll * 3.1) * -7}vw), calc(-50% + ${roll * 62}vh)) rotate(${roll * 420}deg) scale(${1 - roll * 0.15})`;
+  can.style.transform = `translate(calc(-50% + ${Math.sin(roll * 3.1) * -7}vw), calc(-50% + ${roll * 70}vh)) rotate(${roll * 420}deg) scale(${1 - roll * 0.15})`;
+  /* fade out once the roll lands so it never lingers at the seam */
+  can.style.opacity = 1 - Math.min(1, Math.max(0, (colP - 0.7) / 0.14));
 }
 
 /* tags reveal */
@@ -868,16 +881,17 @@ function curtains() {
   zoomStage.style.transform = `scale(${1 - fx * 0.035})`;
   zoomShade.style.opacity = fx * 0.35;
 
-  /* dome morph: sections enter with a deep curve, flatten once inside */
-  for (const sec of domeSections) {
+  /* dome caps: previous color bulges into the new section, then shrinks.
+     scaleY is transform-only, so this never forces a canvas repaint */
+  for (const [sec, cap] of capPairs) {
     const t = sec.getBoundingClientRect().top;
-    if (t > vh + 60 || t < -vh) continue; // off-screen, skip
+    if (t > vh + 80 || t < -vh) continue; // off-screen, skip
     const ex = clamp01((vh - t) / vh);
-    const vr = (1 - ex) * vh * 0.16 + ex * 48;
-    sec.style.borderRadius = `50% 50% 0 0 / ${vr}px ${vr}px 0 0`;
+    cap.style.transform = `scaleY(${1 - ex})`;
   }
 }
-const domeSections = [colorful, threeIntro, zoomScroll, footerEl];
+const capPairs = [colorful, threeIntro, zoomScroll, footerEl]
+  .map(sec => [sec, sec.querySelector('.dome-cap')]);
 
 /* ================= AUTOPILOT: press A to film hands-free =================
    A = start/stop, Esc or any wheel/touch = stop.
