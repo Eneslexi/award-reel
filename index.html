@@ -554,14 +554,60 @@ function blobPath(cx, cy, rx, ry, t, seed) {
   }
   return d + ' Z';
 }
+/* ink smear trail: paint drags behind the mouse, swells, then pools back.
+   Rendered as gooey circles along the recent mouse path, so fast strokes
+   leave fat liquid smears exactly like dragged paint. */
+let mx = 0, my = 0, cmx = 0, cmy = 0; // raw + lerped mouse, shared by ink, card and 3D
+window.addEventListener('mousemove', e => {
+  mx = (e.clientX / innerWidth - 0.5) * 2;
+  my = (e.clientY / innerHeight - 0.5) * 2;
+});
+const inkGroup = document.getElementById('ink');
+const TRAIL_N = 42;
+const trailEls = [];
+for (let i = 0; i < TRAIL_N; i++) {
+  const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  c.setAttribute('r', '0');
+  inkGroup.appendChild(c);
+  trailEls.push(c);
+}
+const trail = [];
+let lastSx = 720, lastSy = 450;
+
 let t = 0;
 function animateInk() {
   t += 0.011;
-  inkA.setAttribute('d', blobPath(700 + Math.sin(t * 0.4) * 30, 430, 390, 165, t, 0));
-  inkB.setAttribute('d', blobPath(560 + Math.cos(t * 0.5) * 50, 480, 230, 105, t * 1.35, 5));
+  /* mouse in svg space (lerped, so the smear is silky) */
+  const sx = (cmx * 0.5 + 0.5) * 1440;
+  const sy = (cmy * 0.5 + 0.5) * 900;
+  const spd = Math.hypot(sx - lastSx, sy - lastSy);
+  lastSx = sx; lastSy = sy;
+  if (spd > 1.2) {
+    trail.push({
+      x: sx + (Math.random() - 0.5) * 26,
+      y: sy + (Math.random() - 0.5) * 26,
+      r: Math.min(95, 22 + spd * 2.6), // faster stroke = fatter smear
+      born: t,
+    });
+    if (trail.length > TRAIL_N) trail.shift();
+  }
+  const LIFE = 0.9;
+  trailEls.forEach((el, i) => {
+    const p = trail[i];
+    if (!p) { el.setAttribute('r', 0); return; }
+    const age = (t - p.born) / LIFE;
+    if (age >= 1) { el.setAttribute('r', 0); return; }
+    const grow = age < 0.22 ? age / 0.22 : 1 - (age - 0.22) / 0.78;
+    el.setAttribute('cx', p.x);
+    el.setAttribute('cy', p.y + age * 26); // paint sags slightly as it dies
+    el.setAttribute('r', Math.max(0, p.r * grow));
+  });
+  /* central pool is also lazily attracted toward the cursor */
+  inkA.setAttribute('d', blobPath(700 + Math.sin(t * 0.4) * 30 + (sx - 720) * 0.16, 430 + (sy - 450) * 0.1, 390, 165, t, 0));
+  inkB.setAttribute('d', blobPath(560 + Math.cos(t * 0.5) * 50 + (sx - 720) * 0.24, 480 + (sy - 450) * 0.16, 230, 105, t * 1.35, 5));
   drips.forEach((dr, i) => {
     const s = 1 + Math.sin(t * 1.4 + i * 2.2) * 0.3;
-    dr.setAttribute('transform', `translate(${Math.sin(t * 0.8 + i) * 20} ${Math.cos(t * 0.6 + i * 1.4) * 14}) scale(${s})`);
+    dr.setAttribute('transform', `translate(${Math.sin(t * 0.8 + i) * 20 + (sx - 720) * 0.08} ${Math.cos(t * 0.6 + i * 1.4) * 14}) scale(${s})`);
     dr.style.transformOrigin = 'center';
   });
   requestAnimationFrame(animateInk);
@@ -569,11 +615,6 @@ function animateInk() {
 animateInk();
 
 const card = document.getElementById('card');
-let mx = 0, my = 0, cmx = 0, cmy = 0;
-window.addEventListener('mousemove', e => {
-  mx = (e.clientX / innerWidth - 0.5) * 2;
-  my = (e.clientY / innerHeight - 0.5) * 2;
-});
 function tiltCard() {
   cmx += (mx - cmx) * 0.06; cmy += (my - cmy) * 0.06;
   card.style.transform = `translate(-50%, -42%) rotateY(${cmx * 22}deg) rotateX(${-cmy * 16}deg)`;
