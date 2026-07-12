@@ -584,6 +584,33 @@
 <script type="module">
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+/* cinematic finish: animated film grain + soft vignette, applied last */
+const GrainVignetteShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    time: { value: 0 },
+    grain: { value: 0.055 },
+    vig: { value: 0.55 },
+  },
+  vertexShader: `varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `varying vec2 vUv;
+    uniform sampler2D tDiffuse; uniform float time; uniform float grain; uniform float vig;
+    float rnd(vec2 c) { return fract(sin(dot(c, vec2(12.9898, 78.233)) + time) * 43758.5453); }
+    void main() {
+      vec4 col = texture2D(tDiffuse, vUv);
+      col.rgb += (rnd(vUv * vec2(1620.0, 920.0)) - 0.5) * grain;
+      float d = length(vUv - 0.5);
+      col.rgb *= mix(1.0, smoothstep(0.95, 0.35, d), vig);
+      gl_FragColor = col;
+    }`,
+};
 
 /* ================= LOADER ================= */
 const counter = document.getElementById('counter');
@@ -767,15 +794,19 @@ function makeJack(mat) {
   g.add(a1, a2, a3);
   return g;
 }
-/* glossy clearcoat plastic, Lusion style */
+/* glossy clearcoat plastic, Lusion style; every few jacks GLOW for the bloom */
 const mats = [
   new THREE.MeshPhysicalMaterial({ color: 0x1f2ae8, roughness: 0.32, metalness: 0.0, clearcoat: 1, clearcoatRoughness: 0.12, envMapIntensity: 1.1 }),
   new THREE.MeshPhysicalMaterial({ color: 0xf4efe6, roughness: 0.38, metalness: 0.0, clearcoat: 0.9, clearcoatRoughness: 0.18, envMapIntensity: 0.9 }),
   new THREE.MeshPhysicalMaterial({ color: 0x101018, roughness: 0.3, metalness: 0.05, clearcoat: 1, clearcoatRoughness: 0.1, envMapIntensity: 1.2 }),
 ];
+const glowMat = new THREE.MeshPhysicalMaterial({
+  color: 0x2233ff, emissive: 0x2a3aff, emissiveIntensity: 2.2,
+  roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.1,
+});
 const jacks = [];
 for (let i = 0; i < 38; i++) {
-  const j = makeJack(mats[i % 5 === 0 ? 2 : (i % 2)]);
+  const j = makeJack(i % 9 === 4 ? glowMat : mats[i % 5 === 0 ? 2 : (i % 2)]);
   j.position.set((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
   j.rotation.set(Math.random() * 6, Math.random() * 6, Math.random() * 6);
   const s = 0.7 + Math.random() * 1.8; j.scale.setScalar(s);
@@ -787,6 +818,17 @@ for (let i = 0; i < 38; i++) {
   };
   jScene.add(j); jacks.push(j);
 }
+
+/* post chain: bloom makes the glow jacks and speculars bleed like a render */
+const jComposer = new EffectComposer(jr);
+jComposer.addPass(new RenderPass(jScene, jCam));
+const jBloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.38, 0.55, 0.78);
+jComposer.addPass(jBloom);
+jComposer.addPass(new OutputPass()); // tone mapping + sRGB
+const jGrain = new ShaderPass(GrainVignetteShader);
+jGrain.uniforms.grain.value = 0.06;
+jGrain.uniforms.vig.value = 0.6;
+jComposer.addPass(jGrain);
 
 /* ================= ZOOM SCENE (igloo vibe) ================= */
 const zoomWrap = document.getElementById('zoom-canvas');
@@ -989,11 +1031,24 @@ const snowPts = new THREE.Points(snowGeo, new THREE.PointsMaterial({
 }));
 zScene.add(snowPts);
 
+/* post chain: a whisper of bloom (dreamy winter haze) + fine grain */
+const zComposer = new EffectComposer(zr);
+zComposer.addPass(new RenderPass(zScene, zCam));
+const zBloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.16, 0.5, 0.82);
+zComposer.addPass(zBloom);
+zComposer.addPass(new OutputPass()); // tone mapping + sRGB
+const zGrain = new ShaderPass(GrainVignetteShader);
+zGrain.uniforms.grain.value = 0.045;
+zGrain.uniforms.vig.value = 0.45;
+zComposer.addPass(zGrain);
+
 /* ================= SIZING ================= */
 function resize() {
   const w = innerWidth, h = innerHeight;
   jr.setSize(w, h); jCam.aspect = w / h; jCam.updateProjectionMatrix();
   zr.setSize(w, h); zCam.aspect = w / h; zCam.updateProjectionMatrix();
+  jComposer.setSize(w, h);
+  zComposer.setSize(w, h);
 }
 resize();
 window.addEventListener('resize', resize);
@@ -1118,7 +1173,8 @@ function loop() {
     jCam.position.y += ((-cmy * 0.9) - jCam.position.y) * 0.04;
     jCam.position.z = 11 - jP * 5;
     jCam.lookAt(0, 0, 0);
-    jr.render(jScene, jCam);
+    jGrain.uniforms.time.value = et;
+    jComposer.render();
   }
 
   /* zoom */
@@ -1153,7 +1209,8 @@ function loop() {
     );
     const lookY = 2.0 - e * 1.1; // gaze settles onto the entrance
     zCam.lookAt(0, lookY, 2.6);
-    zr.render(zScene, zCam);
+    zGrain.uniforms.time.value = et;
+    zComposer.render();
   }
 
   requestAnimationFrame(loop);
